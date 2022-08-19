@@ -1,5 +1,5 @@
 import argparse
-#from asyncio.windows_events import NULL
+from asyncio.windows_events import NULL
 from fileinput import filename
 from pickletools import read_uint1
 from flask import Flask, jsonify, request
@@ -39,6 +39,7 @@ def predict():
         detect.main(opt)
         
         img = cv2.imread('./temp/img/crops/letter/'+file.filename)
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         sharp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(sharp, 127, 255, cv2.THRESH_BINARY)
@@ -59,6 +60,8 @@ def predict():
         os.remove('./temp/'+file.filename)
         os.remove('./testimg/test.jpg')
         shutil.rmtree('./temp/img')
+
+        
 
         year = {
             'year'   : res
