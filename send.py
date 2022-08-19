@@ -14,5 +14,6 @@ def send_data(url):
         
     return res_json
 
+#url = "http://3.36.62.78:5000/predict"
 url = "http://localhost:5000/predict"
 print(send_data(url))
