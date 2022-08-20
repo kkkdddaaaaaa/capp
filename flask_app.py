@@ -61,13 +61,14 @@ def predict():
         date = (tesseract.image_to_string(close))
 
         print(date)
+        new_date = date.replace("\n", "")
+        print(new_date)
         path_clear()
 
         res = {
-            'date'   : date
-        }
+            'date'   : new_date}
 
     return res
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0",debug=True)
+    app.run(host="0.0.0.0", debug=True)
