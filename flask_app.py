@@ -63,19 +63,14 @@ def predict():
             return 
 
         img = img.resize((260, 100), Image.ANTIALIAS)                                          # Tesseract를 사용하기 위한 이미지 전처리 2
-        img.save('./temp/img/crops/letter/'+file.filename, dpi=dpi)                            # yolov5로 crop한 이미지 리사이즈
-        img.save('./blurtest/test3.jpg', dpi=dpi)
-
+        img.save('./temp/img/crops/letter/'+file.filename, dpi=dpi)                            # yolov5로 crop한 이미지 리사이즈 후 저장
+        
         img = cv2.imread('./temp/img/crops/letter/'+file.filename)
         sharp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)                                          # 그레이스케일
-
         kernel = np.ones((2, 2), np.uint8)                                                     # Tesseract를 사용하기 위한 이미지 전처리 3
-        img4 = cv2.dilate(sharp, kernel, iterations=1)                                         # 이미지 Closing, Opening
-        cv2.imwrite('./blurtest/test4.jpg', img)
-        img = cv2.erode(sharp, kernel, iterations=3)
-        cv2.imwrite('./blurtest/test6.jpg', img)
-        img = cv2.dilate(img, (2,2), iterations=1) 
-        cv2.imwrite('./blurtest/test7.jpg', img)
+        img = cv2.dilate(sharp, (1, 1), iterations=1)                                          # 이미지 Closing, Opening
+        img = cv2.erode(img, kernel, iterations=3)
+        img = cv2.dilate(img, kernel, iterations=1) 
         img = cv2.threshold(cv2.bilateralFilter(img, 5, 75, 75), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]    # 이진 필터
 
         cv2.imwrite('./temp/test.jpg', img)
@@ -83,15 +78,14 @@ def predict():
         date = (tesseract.image_to_string(img))                                                # Tesseract-OCR을 통한 이미지 문자화
 
         print(date)
-        new_date = re.sub(r'[^0-9,.-]', '', date)                                              # 숫자와 콤마, 하이픈만 추출
-        print(new_date)
-        new_date2 = pd.to_datetime(new_date)                                                   # 문자열을 datetime 형식으로 변경
-        new_date3 = new_date2.date()                                                           # timestamp에서 시간을 제거
-        print(new_date3)
+        date = re.sub(r'[^0-9,.-]', '', date)                                                  # 숫자와 콤마, 하이픈만 추출
+        date = pd.to_datetime((date), yearfirst = True)                                        # 문자열을 datetime 형식으로 변경
+        date = date.strftime("%Y-%m-%d")
+        print(date)
         path_clear()                                                                           # 임시파일 제거
 
         res = {
-            'date'   : new_date3}
+            'date'   : date}
 
     return res
 
