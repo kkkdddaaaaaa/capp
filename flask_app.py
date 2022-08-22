@@ -16,10 +16,10 @@ import re
 
 app = Flask(__name__)
 
-def save_image(file):
+def save_image(file):                                 # 사진 저장
     file.save('./temp/'+ file.filename)
 
-def path_clear():
+def path_clear():                                     # 경로 정리
     if(os.path.exists('./temp')):
         shutil.rmtree('./temp/')
 
@@ -27,27 +27,26 @@ def path_clear():
 def web():
     return "flask test page"
 
-@app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST'])        
 def predict():    
-    path_clear()
+    path_clear()                                      # 임시파일 제거
     
     if request.method == 'POST':
         os.makedirs('./temp')
         file = request.files['file']
-        save_image(file) # 들어오는 이미지 저장
+        save_image(file)                                                                       # 들어오는 이미지 저장
 
         path= './temp/'+file.filename
-        img = Image.open(path)
-        #img.info['dpi']
+        img = Image.open(path)                                                                 # 로컬에 저장한 이미지 열기
 
-        size = (416,416)
-        img = img.resize(size, Image.ANTIALIAS)
+        size = (416,416)                                                                       # Tesseract를 사용하기 위한 이미지 전처리 1
+        img = img.resize(size, Image.ANTIALIAS)                                                # 이미지 리사이즈 및 DPI 설정
         dpi = (300, 300)
         img = img.rotate(-90)
         img.save(path, dpi=dpi)
         img.save('./blurtest/test.jpg', dpi=dpi)
 
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser()                                                     # yolov5의 detect.py를 사용하기 위한 인자 설정
         parser.add_argument('--weights', nargs='+', type=str, default='best.pt')
         parser.add_argument('--source', type=str, default='./temp/'+file.filename)
         parser.add_argument('--save-conf', default=True)
@@ -57,40 +56,44 @@ def predict():
         opt = parser.parse_args()
 
         detect.main(opt)
-        
-        img = Image.open('./temp/img/crops/letter/'+file.filename) # 사진 인식 못 했을 떄 예외 추가야해야 함.
-        img = img.resize((260, 100), Image.ANTIALIAS)
-        img.save('./temp/img/crops/letter/'+file.filename, dpi=dpi)
+        try:
+            img = Image.open('./temp/img/crops/letter/'+file.filename)                         # 사진 인식 못 했을 떄 예외처리.
+        except FileNotFoundError as e:
+            print(e)
+            return 
+
+        img = img.resize((260, 100), Image.ANTIALIAS)                                          # Tesseract를 사용하기 위한 이미지 전처리 2
+        img.save('./temp/img/crops/letter/'+file.filename, dpi=dpi)                            # yolov5로 crop한 이미지 리사이즈
         img.save('./blurtest/test3.jpg', dpi=dpi)
 
         img = cv2.imread('./temp/img/crops/letter/'+file.filename)
-        sharp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        sharp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)                                          # 그레이스케일
 
-        kernel = np.ones((2, 2), np.uint8)
-        img4 = cv2.dilate(sharp, kernel, iterations=1)        
+        kernel = np.ones((2, 2), np.uint8)                                                     # Tesseract를 사용하기 위한 이미지 전처리 3
+        img4 = cv2.dilate(sharp, kernel, iterations=1)                                         # 이미지 Closing, Opening
         cv2.imwrite('./blurtest/test4.jpg', img)
         img = cv2.erode(sharp, kernel, iterations=3)
         cv2.imwrite('./blurtest/test6.jpg', img)
         img = cv2.dilate(img, (2,2), iterations=1) 
         cv2.imwrite('./blurtest/test7.jpg', img)
-        img = cv2.threshold(cv2.bilateralFilter(img, 5, 75, 75), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        
+        img = cv2.threshold(cv2.bilateralFilter(img, 5, 75, 75), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]    # 이진 필터
+
         cv2.imwrite('./temp/test.jpg', img)
         cv2.imwrite('./blurtest/test5.jpg', img)
-        date = (tesseract.image_to_string(img))
+        date = (tesseract.image_to_string(img))                                                # Tesseract-OCR을 통한 이미지 문자화
 
         print(date)
-        new_date = re.sub(r'[^0-9,.-]', '', date)
+        new_date = re.sub(r'[^0-9,.-]', '', date)                                              # 숫자와 콤마, 하이픈만 추출
         print(new_date)
-        new_date2 = pd.to_datetime(new_date)
-        new_date2 = new_date2.date()
-        print(new_date2)
-        path_clear()
+        new_date2 = pd.to_datetime(new_date)                                                   # 문자열을 datetime 형식으로 변경
+        new_date3 = new_date2.date()                                                           # timestamp에서 시간을 제거
+        print(new_date3)
+        path_clear()                                                                           # 임시파일 제거
 
         res = {
-            'date'   : new_date}
+            'date'   : new_date3}
 
     return res
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0", port = 8080, debug=True)
+    app.run(host="0.0.0.0", port = 6000, debug=True)
