@@ -218,7 +218,7 @@ def parse_opt():
     parser.add_argument('--weights', nargs='+', type=str, default='best.pt')
     parser.add_argument('--source', type=str, default='/testimg/1.jpg')
     parser.add_argument('--data', type=str, default=ROOT / '/dataset23/data.yaml')
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[416])
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int)
     parser.add_argument('--conf-thres', type=float, default=0.25)
     parser.add_argument('--iou-thres', type=float, default=0.45)
     parser.add_argument('--max-det', type=int, default=1000)
